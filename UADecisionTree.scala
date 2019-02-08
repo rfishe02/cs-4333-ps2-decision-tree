@@ -7,8 +7,9 @@ import scala.collection.mutable.HashSet
 class UADecisionTree {
   
   var prob : HashMap[String,HashMap[String,Int]] = _;
-  var dist : HashMap[String,HashSet[String]] = _;
   var tot : Int = _;
+  
+  var attr : Array[String] = _;
   
   var depth : Int = _;
   var impur : Float = _;
@@ -17,25 +18,26 @@ class UADecisionTree {
   // Required methods
   //----------------------------
   
-  def getTrainingMatrix(filename : String, target: String) = {
-    
-    // Get statistics about the file & store them.
-    
-    getStats(filename)
-    
-    // Use the statistics to perform the following steps.
-    
-    // Rearrange the data such that the target variable is placed at the
-    // end of each record.
-    
-    // Test for attributes with more than 20 distinct values.
-    
+  def getTrainingMatrix(filename : String, target: String) : Array[Array[Int]] = {
+
+    val data = getStats(filename) // Get data about the file.
+
     val src = Source.fromFile(filename)
     val itr = src.getLines()
+
     val titles = itr.next().split(",") 
+    var at = orderAttr(data._2,data._4,titles,target) // Rearrange the titles for class storage.
     
+    var tMatrix = buildTMatrix(itr,data._2,titles,target,data._3,data._4)// Iterate over the lines of the file & build the training matrix.
+
+    // Assign values.
     
+    prob = data._1
+    tot = data._3
+    attr = at
     
+    return tMatrix
+ 
   }
   
   def setTreeMaxDepth(depth: Int) = {
@@ -82,74 +84,151 @@ class UADecisionTree {
     
   }
   
-  //----------------------------
-  // Custom methods
-  //----------------------------
+  //--------------------------------------------------
+  // Get statistics about the file.
+  //--------------------------------------------------
   
   def getStats(filename : String) = {
       
-    // Open the file.
-    
     val src = Source.fromFile(filename)
     val itr = src.getLines()
-    val titles = itr.next().split(",") 
     
-    // Create variables to store the data.
+    val titles = itr.next().split(",")
     
-    var p = HashMap.empty[String,HashMap[String,Int]];
-    var d = HashMap.empty[String,HashSet[String]]
+    var freq = calcFreq(itr,titles) // Calculate the freqency of attribute subtypes.
+
+    var valid = markValid(freq._1,titles) // Mark the attributes that have more than 20 subtypes.
+
+    src.close()
+    
+    (freq._1,valid._1,freq._2,valid._2)
+    
+  }
+  
+  def calcFreq(itr : Iterator[String], titles: Array[String]) = {
+    
+    var p = HashMap.empty[String,HashMap[String,Int]]
+    var spl = Array[String]()
     var t = 0
     
-    for(attr <- titles) {
-      
-      p += (attr -> new HashMap[String,Int])
-      
+    for(item <- titles) {
+      p += (item -> new HashMap[String,Int])
     }
     
-    // Iterate through the contents of the file & calc frequencies.
-    
     for(line <- itr) {
-      
-      var spl = line.split(",")
+      spl = line.split(",")
       
       for (ind <- 0 to spl.length-1) {
-        
-        if(p(titles(ind)).contains(spl(ind))) {
+ 
+        if(p(titles(ind)).contains(spl(ind))) {    
+           p(titles(ind))(spl(ind))+=1
           
-          
-          
-        } else {
-          
+        } else {    
           p(titles(ind)) += (spl(ind) -> 1)
           
         }
-        
+      }
+      t+=1;  // Count the total number of records.
+    }
+    
+    (p,t)
+  }
+  
+  def markValid(p: HashMap[String,HashMap[String,Int]], titles: Array[String]) = {
+    
+    var d = HashMap.empty[String,Boolean]
+    var a = 0
+    
+    for(item <- titles) {
+      
+      if(p(item).size <= 20) {
+        d += (item -> true)
+        a += 1 // Count the number of valid attributes.
+      } else {
+        d += (item -> false)
+        p -= item // Remove the freqency from the HashMap.
       }
       
     }
     
-    // Save the statistics to the class.
+    (d,a)
     
-    prob = p;
-    dist = d;
-    tot = t;
-
-    src.close()
-      
   }
   
-  /*
-    val src = Source.fromFile(filename).getLines.toList
-    val test : Map[Char, List[String]] = src.groupBy(_.toString().charAt(0))
+  //--------------------------------------------------
+  // Use the statistics to get the data.
+  //--------------------------------------------------
+  
+  def orderAttr(d: HashMap[String,Boolean], a: Int, titles: Array[String], t: String) : Array[String] = {
     
-    println(test('0').length)
-    println(test('1').length)
+    var at = new Array[String](a)
+    var ind = 0
     
-    for(line <- test){
+    for(item <- titles) {
       
-      println(line)
-      
+      try { 
+        
+        if(item.equalsIgnoreCase(t)) {
+          at(at.length-1) = item
+            
+        } else {
+            
+          if(d(item)) {
+            at(ind) = item  
+            ind+=1
+            
+          }
+            
+        }
+          
+      } catch {
+        case e: NoSuchElementException => e.printStackTrace()
+        System.exit(1)
+      }
+         
     }
-   */
+    
+    return at
+
+  }
+  
+  def buildTMatrix(itr: Iterator[String], d: HashMap[String,Boolean], titles: Array[String], target: String, t: Int, a: Int) : Array[Array[Int]] = {
+    
+    var tMatrix = Array.ofDim[Int](t,a)
+
+    var col = 0
+    var row = 0
+    var spl = Array[String]()
+    
+    for(line <- itr) {
+      
+      spl = line.split(",")
+      col = 0
+      
+      for (ind <- 0 to spl.length-1) {
+ 
+        try {
+
+          if(titles(ind).equalsIgnoreCase(target)) {
+            tMatrix(row)(tMatrix(row).length-1) = spl(ind).toInt
+            
+          } else if(d(titles(ind))) {
+            tMatrix(row)(col) = spl(ind).toInt
+            
+            col+=1;    
+          }
+          
+         } catch {
+           case e: NoSuchElementException => e.printStackTrace()
+           System.exit(1)
+         }
+         
+      }
+      
+      row+=1;
+    }  
+    
+    return tMatrix;
+  }
   
 }
