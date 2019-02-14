@@ -9,7 +9,8 @@ class Node {
   // List of records?
   // Some identifying information?
   
-  var t : String = _;
-  var st : String = _;
+  var att : String = _;
+  var rec : String = _;
+  var prob : Float = _;
   
 }

@@ -1,234 +1,218 @@
 
 import scala.io.Source
 import scala.collection.mutable.HashMap
-
 import scala.collection.mutable.HashSet
+import scala.collection.mutable.ArrayBuffer
 
 class UADecisionTree {
-  
-  var prob : HashMap[String,HashMap[String,Int]] = _;
-  var tot : Int = _;
-  
-  var attr : Array[String] = _;
-  
-  var depth : Int = _;
+
+  var depth : Integer = _;
   var impur : Float = _;
   
-  //----------------------------
-  // Required methods
-  //----------------------------
+  //------------------------------------------------
+  // Necessary methods
+  //------------------------------------------------
   
-  def getTrainingMatrix(filename : String, target: String) : Array[Array[Int]] = {
-
-    val data = getStats(filename) // Get data about the file.
+  def getTrainingMatrix(filename : String, target: String) : ArrayBuffer[ArrayBuffer[String]] = {
+    
+    // Count the number of sub-attributes.
+    
+    val stats = getStats(filename) // ( count, rows, cols )
+    
+    // Rearrange the data such that the target variable is at the end.
 
     val src = Source.fromFile(filename)
     val itr = src.getLines()
-
-    val titles = itr.next().split(",") 
-    var at = orderAttr(data._2,data._4,titles,target) // Rearrange the titles for class storage.
     
-    var tMatrix = buildTMatrix(itr,data._2,titles,target,data._3,data._4)// Iterate over the lines of the file & build the training matrix.
-
-    // Assign values.
+    val labels = itr.next().split(",")
     
-    prob = data._1
-    tot = data._3
-    attr = at
+    val matrix = ArrayBuffer.fill[ArrayBuffer[String]](stats._2)(null)
     
-    return tMatrix
- 
-  }
-  
-  def setTreeMaxDepth(depth: Int) = {
-    
-    // Accepts an integer which is the maximum number of splits that can
-    // take place.
-    
-    
-    
-  }
-  
-  def setMinimumImpurity(depth: Float) = {
-    
-    // Accepts a float which is the min impurity that must be 
-    // satisfied before a node can be split.
-    
-    
-    
-  }
-  
-  def train() = {
-    
-    // Given a set of attributes, find the attribute with the largest IG.
-    // This becomes Node current.
-    
-    // Node current becomes the current inner node.
-    // Split the results on this value and create new child nodes.
-    
-    // Remove Node current from the set of available attributes for training.
-    
-    // If the subset is pure, do not continue to split. Otherwise, split
-    // recursively the results on the child node(s).
-    
-    
-    
-  }
-  
-  def classifyValue(rec: String) = {
-    
-    // Should accepts a string that contains a record which paralells an
-    // entry from the file.
-    
-    
-    
-  }
-  
-  //--------------------------------------------------
-  // Get statistics about the file.
-  //--------------------------------------------------
-  
-  def getStats(filename : String) = {
-      
-    val src = Source.fromFile(filename)
-    val itr = src.getLines()
-    
-    val titles = itr.next().split(",")
-    
-    var freq = calcFreq(itr,titles) // Calculate the freqency of attribute subtypes.
-
-    var valid = markValid(freq._1,titles) // Mark the attributes that have more than 20 subtypes.
-
-    src.close()
-    
-    (freq._1,valid._1,freq._2,valid._2)
-    
-  }
-  
-  def calcFreq(itr : Iterator[String], titles: Array[String]) = {
-    
-    var p = HashMap.empty[String,HashMap[String,Int]]
-    var spl = Array[String]()
-    var t = 0
-    
-    for(item <- titles) {
-      p += (item -> new HashMap[String,Int])
-    }
-    
-    for(line <- itr) {
-      spl = line.split(",")
-      
-      for (ind <- 0 to spl.length-1) {
- 
-        if(p(titles(ind)).contains(spl(ind))) {    
-           p(titles(ind))(spl(ind))+=1
-          
-        } else {    
-          p(titles(ind)) += (spl(ind) -> 1)
-          
-        }
-      }
-      t+=1;  // Count the total number of records.
-    }
-    
-    (p,t)
-  }
-  
-  def markValid(p: HashMap[String,HashMap[String,Int]], titles: Array[String]) = {
-    
-    var d = HashMap.empty[String,Boolean]
-    var a = 0
-    
-    for(item <- titles) {
-      
-      if(p(item).size <= 20) {
-        d += (item -> true)
-        a += 1 // Count the number of valid attributes.
-      } else {
-        d += (item -> false)
-        p -= item // Remove the freqency from the HashMap.
-      }
-      
-    }
-    
-    (d,a)
-    
-  }
-  
-  //--------------------------------------------------
-  // Use the statistics to get the data.
-  //--------------------------------------------------
-  
-  def orderAttr(d: HashMap[String,Boolean], a: Int, titles: Array[String], t: String) : Array[String] = {
-    
-    var at = new Array[String](a)
-    var ind = 0
-    
-    for(item <- titles) {
-      
-      try { 
-        
-        if(item.equalsIgnoreCase(t)) {
-          at(at.length-1) = item
-            
-        } else {
-            
-          if(d(item)) {
-            at(ind) = item  
-            ind+=1
-            
-          }
-            
-        }
-          
-      } catch {
-        case e: NoSuchElementException => e.printStackTrace()
-        System.exit(1)
-      }
-         
-    }
-    
-    return at
-
-  }
-  
-  def buildTMatrix(itr: Iterator[String], d: HashMap[String,Boolean], titles: Array[String], target: String, t: Int, a: Int) : Array[Array[Int]] = {
-    
-    var tMatrix = Array.ofDim[Int](t,a)
-
-    var col = 0
-    var row = 0
+    var col : Integer = 0
+    var row : Integer = 0
     var spl = Array[String]()
     
     for(line <- itr) {
-      
       spl = line.split(",")
       col = 0
       
-      for (ind <- 0 to spl.length-1) {
- 
-        try {
-
-          if(titles(ind).equalsIgnoreCase(target)) {
-            tMatrix(row)(tMatrix(row).length-1) = spl(ind).toInt
-            
-          } else if(d(titles(ind))) {
-            tMatrix(row)(col) = spl(ind).toInt
-            
-            col+=1;    
-          }
+      matrix(row) = ArrayBuffer.fill[String](stats._3)(null)
+      
+      for(ind <- 0 to spl.length -1) {
+        
+        if(stats._1(ind) <= 20) {
           
-         } catch {
-           case e: NoSuchElementException => e.printStackTrace()
-           System.exit(1)
-         }
-         
+          if(labels(ind).equalsIgnoreCase(target)){
+            matrix(row)(matrix(row).length-1) = spl(ind)
+          
+          } else {
+            matrix(row)(col) = spl(ind)
+          
+            col += 1
+          }
+        }
+      }
+      row += 1
+    }
+    
+    printMatrix(matrix)
+    
+    return matrix
+    
+  }
+  
+  def setTreeMaxDepth(max : Integer) {
+    depth = max
+    
+  }
+  
+  def setMinimumImpurity(min : Float) {
+    impur = min
+    
+  }
+  
+  def train(data : Iterator[ArrayBuffer[String]], d : Integer) {
+    
+    // Must take into account max tree limit &
+    // min impurity value.
+    
+    // Take training data as a parameter.
+    
+    if(d < depth) {
+
+      // 1. Find the attribute with the largest IG. 
+      //    this becomes node current.
+      
+      var maxCol : Integer = 0
+      
+      for(item <- data) {
+        
+        
+        
       }
       
-      row+=1;
-    }  
+      // 2. Node current becomes an inner node.
+      //    Split the results on this value & create child nodes.
+      
+      // 3. Remove current from the set of attributes for training.
+      
+      // 4. If the subset is pure, do not split. Otherwise,
+      //    continue to recursively split the results on the child node.
+      
+      var subSet = getSubSet(data,maxCol)
+      
+      for( item <- subSet) {
+        train(item.iterator,d+1);
+        
+      }
+      
+    }
     
-    return tMatrix;
+  }
+  
+  def classifyValue(record : String) {
+    
+    
+    
+  }
+  
+  //------------------------------------------------
+  // My methods
+  //------------------------------------------------
+  
+  def getStats(filename : String) = {
+    
+    val s = HashMap.empty[String,HashSet[String]]
+    val src = Source.fromFile(filename)
+    val itr = src.getLines()
+   
+    // Create a new HashSet for each label.
+    
+    val attr = itr.next().split(",")
+    
+    for(item <- attr) {
+      s+= (item -> new HashSet[String])
+    }
+
+    // Count the sub-attributes using the HashSet.
+    
+    val counts = new Array[Integer](attr.length)
+    var r : Integer = 0
+    
+    var spl = Array[String]()
+    
+    for(line <- itr) {
+      
+      spl = line.split(",")
+      
+      for( ind <- 0 to spl.length - 1) {
+        
+        if(!s(attr(ind)).contains(spl(ind))) {
+          s(attr(ind)) += (spl(ind))
+          counts(ind) += 1
+        }
+        
+      }
+      
+      r = r + 1
+    }
+    
+    // Determine how many of the sub-attributes are valid.
+    
+    var c : Integer = 0
+    
+    for( ind <- 0 to counts.length-1) {
+      if(counts(ind) <= 20) {
+        c += 1
+      }
+    }
+
+    (counts,r,c)
+    
+  }
+  
+  def getSubSet(m : Iterator[ArrayBuffer[String]], col : Integer) = {
+    
+    // Build subsets of data within a column.
+    // This set doesn't include the column.
+    
+    val subSet = HashMap.empty[String,ArrayBuffer[ArrayBuffer[String]]]
+    var tmp = ArrayBuffer[String]()
+    
+    for(item <- m) {
+
+      if(!subSet.contains(item(col))) {
+        subSet += (item(col) -> new ArrayBuffer[ArrayBuffer[String]]())
+      }
+      
+      tmp = new ArrayBuffer[String]()
+      
+      for(ind <- 0 to item.length-1) {
+        if(ind != col) {
+          tmp += item(ind)
+        }
+      }
+      
+      subSet(item(col)) += tmp
+    }
+
+    (subSet.valuesIterator)
+    
+  }
+  
+  def printMatrix(matrix : ArrayBuffer[ArrayBuffer[String]]) {
+    
+    for( row <- 0 to matrix.length-1) {
+      
+      for( col <- 0 to matrix(row).length-1) {
+        
+        print(matrix(row)(col)+" ")
+        
+      }
+      println()
+      
+    }
+    
   }
   
 }

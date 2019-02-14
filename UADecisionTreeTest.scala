@@ -3,33 +3,26 @@ import scala.io.Source
 import java.io.PrintWriter
 import java.io.File
 
-object test {
+object UADecisionTreeTest {
   
-  def main(args:Array[String]) { 
+  def main(args : Array[String]) {
     
-    splitData("./titanicdata.csv");
+    getRandomAccuracy("./weather.csv")
     
-    val t = new UADecisionTree();
-    var tMatrix = t.getTrainingMatrix("./train.csv", "SURVIVAL")
+    var t = new UADecisionTree()
+    t.setTreeMaxDepth(10)
+    val data = t.getTrainingMatrix("./train.csv", "GOLF")
     
-    for(row <- tMatrix) {
-      
-      for(col <- row) {
-        
-        print(col+" ")
-        
-      }
-      
-      println()
+    var a = t.getSubSet(data.iterator, 0)
+    
+    for(item <- a) {
+      println(item)
     }
     
-  }
-  
-  def getRandomAccuracy() = {
     
-  }
-  
-  def getBestDepth() = {
+    
+    //t.train(data,0)
+    
     
   }
   
@@ -42,17 +35,17 @@ object test {
   // a rough 80/20 split.
   //--------------------------------------------------
   
-  def splitData(filename : String) = {
+  def getRandomAccuracy(filename : String) {
     
     val src = Source.fromFile(filename)
     val itr = src.getLines()
-    val titles = itr.next()
+    val labels = itr.next()
     
-    val testWrite = new PrintWriter(new File("./test.csv" ))
-    val trainWrite = new PrintWriter(new File("./train.csv" ))
+    val testWrite = new PrintWriter(new File("./test.csv"))
+    val trainWrite = new PrintWriter(new File("./train.csv"))
     
-    testWrite.println(titles)
-    trainWrite.println(titles)
+    testWrite.println(labels)
+    trainWrite.println(labels)
     
     val rand = new scala.util.Random
     
@@ -73,17 +66,30 @@ object test {
         trainWrite.println(line)
       }
       
-      if(step > 5) { 
-        step = 1;
-        gate = true;
+      if(step > 5) {
+        step = 1
+        gate = true
       }
       
-      step+=1;
+      step += 1
+      
     }
     
-    src.close();
-    testWrite.close();
-    trainWrite.close();
+    src.close()
+    testWrite.close()
+    trainWrite.close()
+    
+  }
+  
+  def getBestDepth() {
+    
+    // Determine the best depth for the data set using the test
+    // & training data.
+    
+    // Start with 0, & increase by 1 until you reach ten,
+    // or the max depth.
+    
+    // Perform this test 100 times & print the average test results.
     
   }
   
