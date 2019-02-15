@@ -18,8 +18,9 @@ object UADecisionTreeTest {
     for(item <- a) {
       println(item)
     }
-    
-    
+
+    // Find first attribute to split on,
+    // then use recursion to split on data.
     
     //t.train(data,0)
     

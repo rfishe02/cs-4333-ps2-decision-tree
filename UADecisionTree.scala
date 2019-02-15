@@ -88,7 +88,6 @@ class UADecisionTree {
       for(item <- data) {
         
         
-        
       }
       
       // 2. Node current becomes an inner node.
@@ -110,9 +109,15 @@ class UADecisionTree {
     
   }
   
+  def calcEntropy(data : Iterator[ArrayBuffer[String]]) = {
+    
+    
+    
+  }
+  
   def classifyValue(record : String) {
     
-    
+    // This method is used during the test phase.
     
   }
   
