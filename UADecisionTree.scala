@@ -104,22 +104,26 @@ class UADecisionTree {
       
       val result = maxNode(parent,data)
       
-      // Create a subset of data that doesn't include the max attribute.
-      val set = getSubSet(data,result.col)
-      
       // Decide to recursively split, or stop.
-      
-      if(result.children != null) {
+
+      if(result.attr != null) {
+        
+        // Create a subset of data that doesn't include the max attribute.
+        val set = getSubSet(data,result.col)
         
         for( n <- result.children) {
-        
-        //println(n.attr+" "+n.ent)
-        
           if(n.ent > impur) {
             train(n,set(n.attr),d+1)
+          } else {
+            println(n.attr+" "+parent.ig+" "+d)
+            // The child becomes a leaf.
           }
-          
         }
+        
+      } else {
+        // The parent becomes a leaf.
+        //println(parent.attr+" "+parent.ig+" "+d)
+        
       }
     }
   }
@@ -245,17 +249,17 @@ class UADecisionTree {
   
   def maxNode(parent: Node, data : ListBuffer[Array[String]]) = {
 
-    var max  = new Node("",0)
+    var max  = new Node(null,0)
     var p : Node = null;
     var c : Node = null;
     
-    var maxIG : Double = 0
-    var cIG : Double = 0
     var prob : Double = 0
     var cProb : Double = 0
     var ent : Double = 0
     var entSum : Double = 0
-    
+    var maxIG : Double = impur
+    var cIG : Double = 0
+ 
     // Calculate the frequencies for the data in the set.
     val freq = calcFreq(data)
     val attr = freq._1
@@ -291,8 +295,8 @@ class UADecisionTree {
         maxIG = cIG
         max = p
       }
-      
       p.attr = c.attr.split(",")(0)
+      p.ig = cIG.toFloat
     }
     
     /*

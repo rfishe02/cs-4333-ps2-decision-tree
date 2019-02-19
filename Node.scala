@@ -7,9 +7,10 @@ class Node(a : String, c : Int) {
   var children : ListBuffer[Node] = _;
 
   var attr : String = a;
-  var res : String = _;
   var col : Int = c;
-  var ent : Float = c;
+  var res : String = _;
+  var ent : Float = _;
+  var ig : Float = _;
   
   def addChild(c : Node) {
     
