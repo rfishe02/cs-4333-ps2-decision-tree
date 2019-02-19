@@ -6,7 +6,7 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 
 object UADecisionTreeTest {
-  
+   
   def main(args : Array[String]) {
     
     val target = "SURVIVED"
@@ -19,11 +19,11 @@ object UADecisionTreeTest {
     
     val data = t.getTrainingMatrix("./train.csv", target)
    
-    val s = new Node(target,data._1(0).length-1)
+    val s = new Node(data._1(0).length-1)
+    s.setAttr(target)
+    
     s.ent = data._2.toFloat
     t.train(s,data._1,0)
-    
-    traverse(s)
     
     //println(s.attr)
     
@@ -99,16 +99,5 @@ object UADecisionTreeTest {
     // Perform this test 100 times & print the average test results.
     
   }
-  
-  def traverse(parent : Node) {
-    
-    println(parent.attr+" "+" "+parent.ig+" "+parent.res)
-    if(parent.children != null) {
-      for(c <- parent.children) {
-        traverse(c)
-      }
-    }
-    
-  }
-  
+
 }

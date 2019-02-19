@@ -107,8 +107,8 @@ class UADecisionTree {
       // Decide to recursively split, or stop.
 
       if(result.children != null) {
-        
-        parent.addChild(result)
+
+        parent.addLink(result)
         result.parent = parent
         
         // Create a subset of data that doesn't include the max attribute.
@@ -116,7 +116,7 @@ class UADecisionTree {
         
         for( n <- result.children) {
           if(n.ent > impur) {
-            train(n,set(n.attr),d+1)
+            train(n,set(n.getAttr()),d+1)
           } else {
             
             // The child becomes a leaf, since it did not meet the min impurity.
@@ -140,7 +140,7 @@ class UADecisionTree {
   
   def classifyValue(record : String) {
     
-    // This method is used during the test phase.
+    
     
   }
   
@@ -255,7 +255,7 @@ class UADecisionTree {
   
   def maxNode(parent: Node, data : ListBuffer[Array[String]]) = {
 
-    var max  = new Node(null,0)
+    var max  = new Node(-1)
     var p : Node = null;
     var c : Node = null;
     
@@ -268,31 +268,28 @@ class UADecisionTree {
  
     // Calculate the frequencies for the data in the set.
     val freq = calcFreq(data)
-    val attr = freq._1
-    val cond = freq._2
-    val sum = freq._3
     
-    for( key <- attr.keySet) {
+    for( key <- freq._1.keySet) {
       
-      p = new Node("",key)
+      p = new Node(key)
       
       entSum = 0
-      for( a <- attr(key)) {
+      for( a <- freq._1(key)) {
         
-        prob = a._2.toDouble / sum
+        prob = a._2.toDouble / freq._3
         ent = 0
         
-        for( b <- cond(a._1)) {
+        for( b <- freq._2(a._1)) {
           cProb = b._2.toDouble / a._2
           ent += cProb * (scala.math.log10(cProb)/scala.math.log10(2))
         }
 
         ent = ent * -1
         
-        c = new Node(a._1,key)
-        c.ent = (ent).toFloat
-        c.parent = p
-        p.addChild(c)
+        // set child values
+        c = new Node(key)
+        c.setValues(a._1, (ent).toFloat)
+        p.addLink(c)
         
         entSum += ent  * prob 
       }
@@ -301,13 +298,10 @@ class UADecisionTree {
         maxIG = cIG
         max = p
       }
-      p.attr = c.attr.split(",")(0)
-      p.ig = cIG.toFloat
+      
+      // set parent values
+      p.attr = c.attr
     }
-    
-    /*
-    println(max.col)
-     */
       
     (max)
     
@@ -399,6 +393,27 @@ class UADecisionTree {
     }
     
     return label
+    
+  }
+  
+  //=============================================================
+  // Recursively travel the tree to classify a record.
+  //=============================================================
+  
+  def traverse(parent : Node, record : Array[String], ind : Int) {
+    
+    println(parent.getAttr()+" "+parent.res)
+    if(parent.children != null && ind < record.length - 2) {
+      
+      // Look for a suitable child for the given attribute.
+      for(c <- parent.children) {
+        
+      }
+      
+    } else {
+      // Classify at the current parent.
+      
+    }
     
   }
   
