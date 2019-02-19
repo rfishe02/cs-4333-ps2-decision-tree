@@ -7,7 +7,7 @@ import scala.collection.mutable.ListBuffer
 class UADecisionTree {
 
   var depth : Integer = _;
-  var impur : Float = _;
+  var impur : Double = _;
   
   //=============================================================
   // The necessary methods.
@@ -55,7 +55,7 @@ class UADecisionTree {
             }
             
           } else {
-            tmp(c) = item(col)
+            tmp(c) = attData(col)+item(col)
             c += 1
           }
           
@@ -86,7 +86,7 @@ class UADecisionTree {
     
   }
   
-  def setMinimumImpurity(min : Float) {
+  def setMinimumImpurity(min : Double) {
     impur = min
     
   }
@@ -95,7 +95,7 @@ class UADecisionTree {
   // This is the train method.
   //=============================================================
   
-  def train(data : Iterator[Array[String]], d : Integer) {
+  def train(parent : Node, data : ListBuffer[Array[String]], d : Integer) {
     
     // Must take into account max tree limit &
     // min impurity value.
@@ -103,6 +103,8 @@ class UADecisionTree {
     // Take training data as a parameter.
     
     if(d < depth) {
+      
+      //println(parent.attr +" "+parent.ent+ " " + d)
 
       // 1. Find the attribute with the largest IG. 
       //    this becomes node current.
@@ -115,6 +117,18 @@ class UADecisionTree {
       // 4. If the subset is pure, do not split. Otherwise,
       //    continue to recursively split the results on the child node.
 
+      val result = maxNode(parent,data)
+      val set = getSubSet(data,result.col)
+      
+      for( n <- result.children) {
+        
+        //println(n.attr+" "+n.ent)
+        
+        if(n.ent > impur) {
+          train(n,set(n.attr),d+1)
+        }
+        
+      }
       
     }
     
@@ -229,9 +243,78 @@ class UADecisionTree {
       subSet(item(col)) += tmp
     }
 
-    printData(subSet)
+    //printData(subSet)
     
-    (subSet.valuesIterator)
+    (subSet)
+    
+  }
+
+  //=============================================================
+  // Calculate information gain & generate a series of nodes.
+  //=============================================================
+  
+  def maxNode(parent: Node, data : ListBuffer[Array[String]]) = {
+
+    var max  = new Node("",0,0)
+    var p : Node = null;
+    var c : Node = null;
+    
+    var maxIG : Double = 0
+    var cIG : Double = 0
+    var prob : Double = 0
+    var cProb : Double = 0
+    var ent : Double = 0
+    var entSum : Double = 0
+    
+    // Calculate the frequencies for the data in the set.
+    val freq = calcFreq(data)
+    val attr = freq._1
+    val cond = freq._2
+    val sum = freq._3
+    
+    for( key <- attr.keySet) {
+      
+      entSum = 0
+      p = new Node(key+"",key,0)
+      
+      for( a <- attr(key)) {
+        
+        prob = a._2.toDouble / sum
+        ent = 0
+        
+        for( b <- cond(a._1)) {
+          cProb = b._2.toDouble / a._2
+          
+          if(cProb > 0) {
+            ent += cProb * (scala.math.log10(cProb)/scala.math.log10(2))
+          } else {
+            ent += 0 
+          }
+        }
+        
+        ent = ent * -1 * prob 
+        entSum += ent
+        
+        c = new Node(a._1,key,ent)
+        c.parent = p
+        p.addChild(c)
+      }
+      cIG = parent.ent-entSum
+      p.ig = cIG
+
+      if(cIG > maxIG) {
+        maxIG = cIG
+        max = p
+      }
+    }
+    
+    /*
+    println(max.col)
+     */
+    max.parent = parent
+    parent.addChild(max)
+      
+    (max)
     
   }
   
@@ -240,8 +323,8 @@ class UADecisionTree {
   //=============================================================
   
   def calcFreq(data : ListBuffer[Array[String]]) = {
-    val freq = HashMap.empty[String,HashMap[String,Integer]] // Conditional
-    val tot = HashMap.empty[Int,HashMap[String,Integer]] // Attribute
+    val cond = HashMap.empty[String,HashMap[String,Integer]] // Conditional
+    val attr = HashMap.empty[Int,HashMap[String,Integer]] // Attribute
     var tmp : String = ""
     var sum : Integer = 0 // Total records
     
@@ -250,27 +333,27 @@ class UADecisionTree {
           
         // Add maps for conditional & attribute frequencies.
         
-        if(!freq.contains(item(col))) {
-          freq += (item(col) -> HashMap.empty[String,Integer])
+        if(!cond.contains(item(col))) {
+          cond += (item(col) -> HashMap.empty[String,Integer])
         }
-        if(!tot.contains(col)) {
-          tot += (col -> HashMap.empty[String,Integer])
+        if(!attr.contains(col)) {
+          attr += (col -> HashMap.empty[String,Integer])
         }
         
         // Calculate conditional & attribute frequencies.
 
         tmp = item(col)+""+item(item.size-1)
         
-        if(freq(item(col)).contains( tmp ) ) {
-          freq(item(col))( tmp ) += 1
+        if(cond(item(col)).contains( tmp ) ) {
+          cond(item(col))( tmp ) += 1
         } else {
-          freq(item(col)) += ( tmp -> 1)
+          cond(item(col)) += ( tmp -> 1)
         } 
 
-        if(tot(col).contains(item(col))){
-          tot(col)(item(col)) += 1
+        if(attr(col).contains(item(col))){
+          attr(col)(item(col)) += 1
         } else {
-          tot(col) += (item(col) -> 1)
+          attr(col) += (item(col) -> 1)
         }
         
       }
@@ -286,59 +369,7 @@ class UADecisionTree {
     }
     System.out.println(sum)*/
    
-    (freq,tot,sum)
-    
-  }
-  
-  //=============================================================
-  // Calculate information gain.
-  //=============================================================
-  
-  def calcIG(parent: Double, attr: HashMap[Int,HashMap[String,Integer]], cond : HashMap[String,HashMap[String,Integer]], sum : Integer) = {
-
-    var maxIG : Double = 0
-    var cIG : Double = 0
-    var maxCol : Int = 0
-    var maxEnt : Double = 0
-    
-    var prob : Double = 0
-    var cProb : Double = 0
-    var ent : Double = 0
-    var entSum : Double = 0
-    
-    for( key <- attr.keySet) {
-      
-      entSum = 0
-      for( a <- attr(key)) {
-        prob = a._2.toDouble / sum
-        ent = 0
-        
-        for( b <- cond(a._1)) {
-          cProb = b._2.toDouble / a._2
-          
-          if(cProb > 0) {
-            ent += cProb * (scala.math.log10(cProb)/scala.math.log10(2))
-          } else {
-            ent += 0 
-          }
-
-        }
-        
-        ent = ent * -1 * prob 
-        entSum += ent
-      }
-      cIG = parent-entSum
-      
-      if(cIG > maxIG) {
-        maxIG = cIG
-        maxCol = key
-        maxEnt = 0
-      }
-    }
-    
-    //println(maxCol)
-    
-    (maxCol,maxEnt)
+    (attr,cond,sum)
     
   }
 

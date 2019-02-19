@@ -1,16 +1,24 @@
 
+import scala.collection.mutable.ListBuffer
 
-class Node {
+class Node(a : String, c : Int, e : Double) {
   
-  var Parent: Node = _;
-  var Left: Node = _;
-  var Right: Node = _;
+  var parent: Node = _;
+  var children : ListBuffer[Node] = _;
+
+  var attr : String = a;
+  var col : Int = c;
+  var ent : Double = e;
+  var ig : Double = _;
   
-  // List of records?
-  // Some identifying information?
-  
-  var att : String = _;
-  var rec : String = _;
-  var prob : Float = _;
+  def addChild(c : Node) {
+    
+    if(children == null) {
+      children = new ListBuffer[Node]()
+    }
+    
+    children += c
+    
+  }
   
 }

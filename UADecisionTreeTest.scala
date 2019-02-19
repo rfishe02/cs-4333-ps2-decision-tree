@@ -9,18 +9,22 @@ object UADecisionTreeTest {
   
   def main(args : Array[String]) {
     
+    val target = "PLAY GOLF"
+    
     getRandomAccuracy("./weather.csv")
     
     val t = new UADecisionTree()
     t.setTreeMaxDepth(10)
+    t.setMinimumImpurity(0)
     
-    val data = t.getTrainingMatrix("./weather.csv", "PLAY GOLF")
-
-    val freq = t.calcFreq(data._1)
-    val maxCol = t.calcIG(data._2, freq._2, freq._1,freq._3)
-    val sub = t.getSubSet(data._1,maxCol._1)
+    val data = t.getTrainingMatrix("./weather.csv", target)
    
-    //t.train(data.iterator,0)
+    val s = new Node(target,data._1(0).length-1,data._2)
+    t.train(s,data._1,0)
+    
+    traverse(s)
+    
+    //println(s.attr)
     
   }
   
@@ -95,8 +99,15 @@ object UADecisionTreeTest {
     
   }
   
-  //=============================================================
-  // Methods I've developed.
-  //=============================================================
+  def traverse(parent : Node) {
+    
+    println(parent.attr+" "+parent.ent)
+    if(parent.children != null) {
+      for(c <- parent.children) {
+        traverse(c)
+      }
+    }
+    
+  }
   
 }
