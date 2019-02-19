@@ -22,7 +22,6 @@ class UADecisionTree {
     val tgt = HashMap.empty[String,Integer]
     var e : Double = 0
     var c : Integer = 0
-    var spl = Array[String]()
     var tmp = Array[String]()
 
     // Determine which subattributes are valid.
@@ -65,7 +64,6 @@ class UADecisionTree {
       
     }
 
-    //printData(matrix)
     // Calculate base entropy for the target variable.
     
     for( item <- tgt) {
@@ -99,14 +97,13 @@ class UADecisionTree {
     
     if(d < depth) {
       
-      // Find the attribut with the largest IG.
-      // Return a node with children.
+      // Find the attribute with the largest IG and return a node with children.
       
       val result = maxNode(parent,data)
       
       // Decide to recursively split, or stop.
 
-      if(result.children != null) {
+      if(result != null) {
 
         parent.addLink(result)
         result.parent = parent
@@ -116,18 +113,17 @@ class UADecisionTree {
         
         for( n <- result.children) {
           if(n.ent > impur) {
-            train(n,set(n.getAttr()),d+1)
+            train(n,set(n.getAttr()),d+1) // Split using the subattribute's subset.
           } else {
             
-            // The child becomes a leaf, since it did not meet the min impurity.
+            // The child becomes a leaf when the impurity is sufficient.
             n.res = getOutcome(set(n.getAttr()))
 
           }
         }
-        
       } else {
         
-        // The parent becomes a leaf, since it did not meet the min impurity.
+        // The parent becomes a leaf when the information gain isn't sufficient.
         parent.res = getOutcome(data)
         
       }
@@ -255,7 +251,7 @@ class UADecisionTree {
   
   def maxNode(parent: Node, data : ListBuffer[Array[String]]) = {
 
-    var max  = new Node(-1)
+    var max : Node = null;
     var p : Node = null;
     var c : Node = null;
     
@@ -263,7 +259,7 @@ class UADecisionTree {
     var cProb : Double = 0
     var ent : Double = 0
     var entSum : Double = 0
-    var maxIG : Double = impur
+    var maxIG : Double = -1
     var cIG : Double = 0
  
     // Calculate the frequencies for the data in the set.
@@ -348,17 +344,7 @@ class UADecisionTree {
       }
       sum += 1
     }
-    
-    /*
-    for( item <- attr) {
-      println(item)
-    }
-    for( item <- cond) {
-      println(item)
-    }
-    System.out.println(sum)
-   	*/
-   
+
     (attr,cond,sum)
     
   }
@@ -370,6 +356,10 @@ class UADecisionTree {
   def getOutcome(data : ListBuffer[Array[String]]) : String = {
     
     val freq = HashMap.empty[String,Integer]
+    var label : String = null
+    var max : Integer = 0
+    
+    // Get the frequencies of the subattributes in the set.
     
     for(item <- data) {
       
@@ -381,15 +371,13 @@ class UADecisionTree {
       
     }
     
-    var label : String = null
-    var max : Integer = 0
+    // Find the most frequent attribute & associated outcome.
     
     for( values <- freq) {
       if(values._2 > max) {
         max = values._2
         label = values._1
       }
-      //println(values)
     }
     
     return label
@@ -402,14 +390,30 @@ class UADecisionTree {
   
   def traverse(parent : Node, map : HashSet[String], ind : Integer) {
 
-    if(parent.res == null && parent.children != null) {
+    var gate : Boolean = false
+    
+    if(parent.res == null) {
+      // Continue as long as the node doesn't have a survival condition.
       
-      for(c <- parent.children) {
-          
-        if(map.contains(c.getAttr())) {
-            traverse(c,map,ind+1)
+      var child : Node = null
+      
+      def findChild() {
+        
+        for(c <- parent.children) {
+        // Choose a child that has the same conditions as the record.
+        
+          if(map.contains(c.getAttr())) {
+            gate = true
+            child = c
+            return
+          }
+
         }
-          
+
+      }
+      
+      if(gate) {
+        traverse(child,map,ind+1)
       }
       
     } else {

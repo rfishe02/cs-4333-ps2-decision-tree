@@ -9,7 +9,7 @@ object UADecisionTreeTest {
    
   def main(args : Array[String]) {
     
-    val target = "SURVIVED"
+    val target = "PLAY GOLF"
     
     getRandomAccuracy("./titanicdata.csv")
     
@@ -17,7 +17,7 @@ object UADecisionTreeTest {
     t.setTreeMaxDepth(10)
     t.setMinimumImpurity(0.05.toFloat)
     
-    val data = t.getTrainingMatrix("./train.csv", target)
+    val data = t.getTrainingMatrix("./weathertest.csv", target)
    
     val s = new Node(data._1(0).length-1)
     s.setValues(target, data._2.toFloat)
