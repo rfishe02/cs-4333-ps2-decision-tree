@@ -120,7 +120,7 @@ class UADecisionTree {
           } else {
             
             // The child becomes a leaf, since it did not meet the min impurity.
-            n.res = getOutcome(set(n.attr))
+            n.res = getOutcome(set(n.getAttr()))
 
           }
         }
@@ -400,19 +400,21 @@ class UADecisionTree {
   // Recursively travel the tree to classify a record.
   //=============================================================
   
-  def traverse(parent : Node, record : Array[String], ind : Int) {
-    
-    println(parent.getAttr()+" "+parent.res)
-    if(parent.children != null && ind < record.length - 2) {
+  def traverse(parent : Node, map : HashSet[String], ind : Integer) {
+
+    if(parent.res == null && parent.children != null) {
       
-      // Look for a suitable child for the given attribute.
       for(c <- parent.children) {
-        
+          
+        if(map.contains(c.getAttr())) {
+            traverse(c,map,ind+1)
+        }
+          
       }
       
     } else {
-      // Classify at the current parent.
-      
+      println(parent.attr+" "+parent.res)
+
     }
     
   }

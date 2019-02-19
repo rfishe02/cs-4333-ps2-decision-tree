@@ -2,7 +2,7 @@
 import scala.io.Source
 import java.io.PrintWriter
 import java.io.File
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.HashSet
 import scala.collection.mutable.ArrayBuffer
 
 object UADecisionTreeTest {
@@ -20,12 +20,27 @@ object UADecisionTreeTest {
     val data = t.getTrainingMatrix("./train.csv", target)
    
     val s = new Node(data._1(0).length-1)
-    s.setAttr(target)
-    
-    s.ent = data._2.toFloat
+    s.setValues(target, data._2.toFloat)
+
     t.train(s,data._1,0)
+
+    // Attempt to classify value.
     
-    //println(s.attr)
+    val map = HashSet.empty[String]
+    val itr = data._1.iterator
+    val tmp = itr.next()
+    var spl = Array[String]()
+    
+    for(ind <- 0 to tmp.length-1) {
+      spl = tmp(ind).split(",")
+      map += tmp(ind)
+      map += spl(0)
+      print(tmp(ind)+" ")
+    }
+    println()
+
+    t.traverse(s,map,0)
+    
     
   }
   
@@ -89,6 +104,8 @@ object UADecisionTreeTest {
   }
   
   def getBestDepth() {
+    
+    // Accuracy = # of correct positions / total positions
     
     // Determine the best depth for the data set using the test
     // & training data.
