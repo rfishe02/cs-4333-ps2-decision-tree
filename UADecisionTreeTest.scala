@@ -23,7 +23,7 @@ object UADecisionTreeTest {
     s.ent = data._2.toFloat
     t.train(s,data._1,0)
     
-    //traverse(s)
+    traverse(s)
     
     //println(s.attr)
     
@@ -102,7 +102,7 @@ object UADecisionTreeTest {
   
   def traverse(parent : Node) {
     
-    println(parent.attr+" "+" "+parent.col+" "+parent.ent)
+    println(parent.attr+" "+" "+parent.ig+" "+parent.res)
     if(parent.children != null) {
       for(c <- parent.children) {
         traverse(c)

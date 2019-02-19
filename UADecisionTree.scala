@@ -98,6 +98,8 @@ class UADecisionTree {
   def train(parent : Node, data : ListBuffer[Array[String]], d : Integer) {
     
     if(d < depth) {
+      
+      var label : String = null
 
       // Find the attribut with the largest IG.
       // Return a node with children.
@@ -106,7 +108,7 @@ class UADecisionTree {
       
       // Decide to recursively split, or stop.
 
-      if(result.attr != null) {
+      if(result.children != null) {
         
         // Create a subset of data that doesn't include the max attribute.
         val set = getSubSet(data,result.col)
@@ -115,14 +117,27 @@ class UADecisionTree {
           if(n.ent > impur) {
             train(n,set(n.attr),d+1)
           } else {
-            println(n.attr+" "+parent.ig+" "+d)
             // The child becomes a leaf.
+            
+            if(label == null) {
+              label = getOutcome(data)
+              n.res = label
+            } else {
+              n.res = label
+            }
+
           }
         }
         
       } else {
         // The parent becomes a leaf.
-        //println(parent.attr+" "+parent.ig+" "+d)
+        
+        if(label == null) {
+          label = getOutcome(data)
+          parent.res = label
+        } else {
+          parent.res = label
+        }
         
       }
     }
@@ -364,7 +379,39 @@ class UADecisionTree {
     (attr,cond,sum)
     
   }
+  
+  //=============================================================
+  // Find the outcome of a Node.
+  //=============================================================
 
+  def getOutcome(data : ListBuffer[Array[String]]) : String = {
+    
+    val freq = HashMap.empty[String,Integer]
+    
+    for(item <- data) {
+      
+      if(freq.contains(item(item.length-1))) {
+        freq(item(item.length-1)) += 1
+      } else {
+        freq += (item(item.length-1) -> 1)
+      }
+      
+    }
+    
+    var label : String = null
+    var max : Integer = 0
+    
+    for( values <- freq) {
+      if(values._2 > max) {
+        max = values._2
+        label = values._1
+      }
+    }
+    
+    return label
+    
+  }
+  
   //=============================================================
   // The following methods are used to debug the application.
   //=============================================================
