@@ -7,7 +7,7 @@ import scala.collection.mutable.ListBuffer
 class UADecisionTree {
 
   var depth : Integer = _;
-  var impur : Double = _;
+  var impur : Float = _;
   
   //=============================================================
   // The necessary methods.
@@ -45,7 +45,7 @@ class UADecisionTree {
         if(stats._2(col) <= 20) {
           
           if(attData(col).equalsIgnoreCase(target)) { 
-            tmp(tmp.length-1) = item(col)
+            tmp(tmp.length-1) = attData(col)+","+item(col)
             
             // Calculate the frequencies for the target variable.
             if(tgt.contains(item(col))) {
@@ -55,7 +55,7 @@ class UADecisionTree {
             }
             
           } else {
-            tmp(c) = attData(col)+item(col)
+            tmp(c) = attData(col)+","+item(col)
             c += 1
           }
           
@@ -86,7 +86,7 @@ class UADecisionTree {
     
   }
   
-  def setMinimumImpurity(min : Double) {
+  def setMinimumImpurity(min : Float) {
     impur = min
     
   }
@@ -97,41 +97,31 @@ class UADecisionTree {
   
   def train(parent : Node, data : ListBuffer[Array[String]], d : Integer) {
     
-    // Must take into account max tree limit &
-    // min impurity value.
-    
-    // Take training data as a parameter.
-    
     if(d < depth) {
-      
-      //println(parent.attr +" "+parent.ent+ " " + d)
 
-      // 1. Find the attribute with the largest IG. 
-      //    this becomes node current.
+      // Find the attribut with the largest IG.
+      // Return a node with children.
       
-      // 2. Node current becomes an inner node.
-      //    Split the results on this value & create child nodes.
-      
-      // 3. Remove current from the set of attributes for training.
-      
-      // 4. If the subset is pure, do not split. Otherwise,
-      //    continue to recursively split the results on the child node.
-
       val result = maxNode(parent,data)
+      
+      // Create a subset of data that doesn't include the max attribute.
       val set = getSubSet(data,result.col)
       
-      for( n <- result.children) {
+      // Decide to recursively split, or stop.
+      
+      if(result.children != null) {
+        
+        for( n <- result.children) {
         
         //println(n.attr+" "+n.ent)
         
-        if(n.ent > impur) {
-          train(n,set(n.attr),d+1)
+          if(n.ent > impur) {
+            train(n,set(n.attr),d+1)
+          }
+          
         }
-        
       }
-      
     }
-    
   }
   
   //=============================================================
@@ -255,7 +245,7 @@ class UADecisionTree {
   
   def maxNode(parent: Node, data : ListBuffer[Array[String]]) = {
 
-    var max  = new Node("",0,0)
+    var max  = new Node("",0)
     var p : Node = null;
     var c : Node = null;
     
@@ -274,9 +264,9 @@ class UADecisionTree {
     
     for( key <- attr.keySet) {
       
-      entSum = 0
-      p = new Node(key+"",key,0)
+      p = new Node("",key)
       
+      entSum = 0
       for( a <- attr(key)) {
         
         prob = a._2.toDouble / sum
@@ -284,28 +274,25 @@ class UADecisionTree {
         
         for( b <- cond(a._1)) {
           cProb = b._2.toDouble / a._2
-          
-          if(cProb > 0) {
-            ent += cProb * (scala.math.log10(cProb)/scala.math.log10(2))
-          } else {
-            ent += 0 
-          }
+          ent += cProb * (scala.math.log10(cProb)/scala.math.log10(2))
         }
+
+        ent = ent * -1
         
-        ent = ent * -1 * prob 
-        entSum += ent
-        
-        c = new Node(a._1,key,ent)
+        c = new Node(a._1,key)
+        c.ent = (ent).toFloat
         c.parent = p
         p.addChild(c)
+        
+        entSum += ent  * prob 
       }
       cIG = parent.ent-entSum
-      p.ig = cIG
-
       if(cIG > maxIG) {
         maxIG = cIG
         max = p
       }
+      
+      p.attr = c.attr.split(",")(0)
     }
     
     /*
@@ -361,13 +348,14 @@ class UADecisionTree {
     }
     
     /*
-    for( item <- freq) {
+    for( item <- attr) {
       println(item)
     }
-    for( item <- tot) {
+    for( item <- cond) {
       println(item)
     }
-    System.out.println(sum)*/
+    System.out.println(sum)
+   	*/
    
     (attr,cond,sum)
     
