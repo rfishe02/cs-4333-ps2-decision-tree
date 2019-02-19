@@ -99,8 +99,6 @@ class UADecisionTree {
     
     if(d < depth) {
       
-      var label : String = null
-
       // Find the attribut with the largest IG.
       // Return a node with children.
       
@@ -110,6 +108,9 @@ class UADecisionTree {
 
       if(result.children != null) {
         
+        parent.addChild(result)
+        result.parent = parent
+        
         // Create a subset of data that doesn't include the max attribute.
         val set = getSubSet(data,result.col)
         
@@ -117,27 +118,17 @@ class UADecisionTree {
           if(n.ent > impur) {
             train(n,set(n.attr),d+1)
           } else {
-            // The child becomes a leaf.
             
-            if(label == null) {
-              label = getOutcome(data)
-              n.res = label
-            } else {
-              n.res = label
-            }
+            // The child becomes a leaf, since it did not meet the min impurity.
+            n.res = getOutcome(set(n.attr))
 
           }
         }
         
       } else {
-        // The parent becomes a leaf.
         
-        if(label == null) {
-          label = getOutcome(data)
-          parent.res = label
-        } else {
-          parent.res = label
-        }
+        // The parent becomes a leaf, since it did not meet the min impurity.
+        parent.res = getOutcome(data)
         
       }
     }
@@ -317,8 +308,6 @@ class UADecisionTree {
     /*
     println(max.col)
      */
-    max.parent = parent
-    parent.addChild(max)
       
     (max)
     
@@ -406,6 +395,7 @@ class UADecisionTree {
         max = values._2
         label = values._1
       }
+      //println(values)
     }
     
     return label
