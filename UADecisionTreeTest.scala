@@ -15,13 +15,11 @@ object UADecisionTreeTest {
     t.setTreeMaxDepth(10)
     
     val data = t.getTrainingMatrix("./weather.csv", "PLAY GOLF")
-    
-    val sub = t.getSubSet(data, 0)
-    
-    val freq = t.calcFreq(sub.next())
-    
-    //val maxCol = getFirstSplit(parent,child)
 
+    val freq = t.calcFreq(data._1)
+    val maxCol = t.calcIG(data._2, freq._2, freq._1,freq._3)
+    val sub = t.getSubSet(data._1,maxCol._1)
+   
     //t.train(data.iterator,0)
     
   }
@@ -100,52 +98,5 @@ object UADecisionTreeTest {
   //=============================================================
   // Methods I've developed.
   //=============================================================
-  
-  def getFirstSplit(parent : (HashMap[Int,HashMap[String,Integer]],Integer), child : (HashMap[String,HashMap[String,Integer]],HashMap[String,Integer])) : Integer = {
-    
-    var cIG : Double = 0
-    var maxIG : Double = 0
-    var maxEnt : Double = 0
-    var maxCol : Integer = 0
-    
-    var pProb : Double = 0
-    var entParent : Double = 0
-    
-    var cProb : Double = 0
-    var entChild : Double = 0
-    var entChildSum : Double = 0
-
-    for(key <- parent._1.keySet) {
-
-      entParent = 0
-      entChildSum = 0
-      for(p <- parent._1(key)) {
-        pProb = p._2.toDouble / parent._2
-        entParent = entParent + pProb * (scala.math.log10(pProb)/scala.math.log10(2))
-        
-        entChild = 0
-        for(c <- child._1(p._1)) {
-          cProb = c._2.toDouble / p._2
-          entChild = entChild + cProb * (scala.math.log10(cProb)/scala.math.log10(2))
-          
-        }
-        entChild = pProb * entChild * -1
-        entChildSum += entChild
-        
-      }
-      
-      entParent = entParent * -1
-      cIG = entParent - entChildSum;
-
-      if(cIG > maxIG) {
-        maxIG = cIG
-        maxCol = key
-      }
-      
-    }
-
-    return maxCol
-    
-  }
   
 }

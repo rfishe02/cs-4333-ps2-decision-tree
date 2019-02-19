@@ -19,16 +19,16 @@ class UADecisionTree {
   
   def getTrainingMatrix(filename : String, target: String) = {
     
+    val tgt = HashMap.empty[String,Integer]
+    var e : Double = 0
     var c : Integer = 0
     var spl = Array[String]()
     var tmp = Array[String]()
-    //var r : Integer = 0
-    
+
     // Determine which subattributes are valid.
     
     val stats = getStats(filename, target) // ( data, s, c )
     val matrix = ListBuffer.empty[Array[String]]
-    //val matrix = Array.ofDim[String](stats._1.size-1,stats._3) // Don't include attData in the matrix.
 
     // Rearrange the data such that the target variable is at the end.
     
@@ -44,17 +44,17 @@ class UADecisionTree {
         
         if(stats._2(col) <= 20) {
           
-          /*
-          if(attr(c) == null) {
-            attr(c) = attData(col)
-          }*/
-          
           if(attData(col).equalsIgnoreCase(target)) { 
-            //matrix(r)(matrix(r).length-1) = item(col)
             tmp(tmp.length-1) = item(col)
             
+            // Calculate the frequencies for the target variable.
+            if(tgt.contains(item(col))) {
+              tgt(item(col)) += 1
+            } else {
+              tgt += (item(col) -> 1)
+            }
+            
           } else {
-            //matrix(r)(c) = item(col)
             tmp(c) = item(col)
             c += 1
           }
@@ -63,12 +63,18 @@ class UADecisionTree {
       }
       matrix += tmp
       
-      //r += 1
     }
 
     //printData(matrix)
+    // Calculate base entropy for the target variable.
     
-    (matrix)
+    for( item <- tgt) {
+      e += (item._2.toDouble/matrix.size) * (scala.math.log10(item._2.toDouble/matrix.size) / scala.math.log10(2))
+    }
+    
+    e = e * -1
+    
+    (matrix,e)
   }
   
   //=============================================================
@@ -235,16 +241,23 @@ class UADecisionTree {
   
   def calcFreq(data : ListBuffer[Array[String]]) = {
     val freq = HashMap.empty[String,HashMap[String,Integer]] // Conditional
-    val tot = HashMap.empty[String,Integer] // Attribute
+    val tot = HashMap.empty[Int,HashMap[String,Integer]] // Attribute
     var tmp : String = ""
     var sum : Integer = 0 // Total records
     
     for( item <- data) {
       for(col <- 0 to item.size - 2) {
           
+        // Add maps for conditional & attribute frequencies.
+        
         if(!freq.contains(item(col))) {
           freq += (item(col) -> HashMap.empty[String,Integer])
         }
+        if(!tot.contains(col)) {
+          tot += (col -> HashMap.empty[String,Integer])
+        }
+        
+        // Calculate conditional & attribute frequencies.
 
         tmp = item(col)+""+item(item.size-1)
         
@@ -253,48 +266,85 @@ class UADecisionTree {
         } else {
           freq(item(col)) += ( tmp -> 1)
         } 
-        
-        if(!tot.contains(item(col))) {
-          tot += (item(col) -> 1)
+
+        if(tot(col).contains(item(col))){
+          tot(col)(item(col)) += 1
         } else {
-          tot(item(col)) += 1
+          tot(col) += (item(col) -> 1)
         }
         
       }
       sum += 1
     }
     
-    printData(freq.valuesIterator)
+    /*
+    for( item <- freq) {
+      println(item)
+    }
     for( item <- tot) {
       println(item)
     }
-    System.out.println(sum)
+    System.out.println(sum)*/
    
     (freq,tot,sum)
+    
+  }
+  
+  //=============================================================
+  // Calculate information gain.
+  //=============================================================
+  
+  def calcIG(parent: Double, attr: HashMap[Int,HashMap[String,Integer]], cond : HashMap[String,HashMap[String,Integer]], sum : Integer) = {
+
+    var maxIG : Double = 0
+    var cIG : Double = 0
+    var maxCol : Int = 0
+    var maxEnt : Double = 0
+    
+    var prob : Double = 0
+    var cProb : Double = 0
+    var ent : Double = 0
+    var entSum : Double = 0
+    
+    for( key <- attr.keySet) {
+      
+      entSum = 0
+      for( a <- attr(key)) {
+        prob = a._2.toDouble / sum
+        ent = 0
+        
+        for( b <- cond(a._1)) {
+          cProb = b._2.toDouble / a._2
+          
+          if(cProb > 0) {
+            ent += cProb * (scala.math.log10(cProb)/scala.math.log10(2))
+          } else {
+            ent += 0 
+          }
+
+        }
+        
+        ent = ent * -1 * prob 
+        entSum += ent
+      }
+      cIG = parent-entSum
+      
+      if(cIG > maxIG) {
+        maxIG = cIG
+        maxCol = key
+        maxEnt = 0
+      }
+    }
+    
+    //println(maxCol)
+    
+    (maxCol,maxEnt)
     
   }
 
   //=============================================================
   // The following methods are used to debug the application.
   //=============================================================
-  
-  /*
-  def printData(data : Array[Array[String]]) {
-    
-    // Print the contents of the training matrix.
-    
-    for( row <- 0 to data.length-1) {
-      
-      for( col <- 0 to data(row).length-1) {
-        
-        print(data(row)(col)+" ")
-        
-      }
-      println()
-      
-    }
-    
-  }*/
   
   def printData(data : ListBuffer[Array[String]]) {
     
@@ -326,14 +376,6 @@ class UADecisionTree {
         println()
       }
       println()
-    }
-    
-  }
-  
-  def printData(data : Iterator[HashMap[String,Integer]]) {
-    
-    for( item <- data){
-      println(item)
     }
     
   }
