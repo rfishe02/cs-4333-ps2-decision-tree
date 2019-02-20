@@ -40,7 +40,7 @@ class UADecisionTree {
       
       tmp = new Array[String](stats._3)
       
-      for(col <- 0 to item.length - 1) {
+      for(col <- 0 until item.length) {
         
         if(stats._2(col) <= 20) {
           
@@ -147,7 +147,7 @@ class UADecisionTree {
     val tmp = record.split(",")
     var spl = Array[String]()
     
-    for(ind <- 0 to tmp.length-1) {
+    for(ind <- 0 until tmp.length) {
       map += tmp(ind)
       spl = tmp(ind).split(",")
       map += spl(0)
@@ -202,7 +202,7 @@ class UADecisionTree {
       spl = line.split(",")
       data += spl
       
-      for( col <- 0 to spl.length - 1) {
+      for( col <- 0 until spl.length) {
         if(set.contains(attr(col))) {
           if(!set(attr(col)).contains(spl(col))) {
             set(attr(col)) += (spl(col))
@@ -253,7 +253,7 @@ class UADecisionTree {
       tmp = new Array[String](item.length-1)
       
       i = 0
-      for(c <- 0 to item.length-1) {
+      for(c <- 0 until item.length) {
         if(c != col) {
           tmp(i) = item(c)
           i += 1
@@ -460,9 +460,7 @@ class UADecisionTree {
     // Print the contents of the training matrix.
     
     for( item <- data) {
-      
-      for( col <- 0 to item.length-1) {
-        
+      for( col <- 0 until item.length) {
         print(item(col)+" ")
         
       }
@@ -479,7 +477,7 @@ class UADecisionTree {
     for( item <- data) {
       println(item._1)
       for( array <- item._2) {
-        for(col <- 0 to array.length - 1) {
+        for(col <- 0 until array.length) {
           print(array(col)+" ")
         }
         println()

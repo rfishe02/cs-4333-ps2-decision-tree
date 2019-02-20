@@ -110,8 +110,8 @@ object UADecisionTreeTest {
     var tree : UADecisionTree = null
     var testData = (ListBuffer[Array[String]](),0.0)
     var start : Node = null
-    val correct = new Array[Integer](10)
-    val total = new Array[Integer](10)
+    val correct = new Array[Integer](11)
+    val total = new Array[Integer](11)
     
     try {
 
@@ -121,10 +121,10 @@ object UADecisionTreeTest {
         
         // Conduct tests.
     
-        for(depth <- 0 to 9) {
+        for(depth <- 0 to 10) {
           correct(depth) = 0
           
-          for(a <- 0 to 100) {
+          for(a <- 1 to 100) {
         
             getRandomAccuracy(filename,target)
         
@@ -156,7 +156,7 @@ object UADecisionTreeTest {
         // Print results.
         
         var result : Double = 0
-        for(ind <- 0 to correct.length-1) {
+        for(ind <- 0 until correct.length) {
           result = correct(ind).toDouble / total(ind)
           System.out.println(ind+" "+result)
         }
