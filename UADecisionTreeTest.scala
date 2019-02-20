@@ -9,38 +9,33 @@ object UADecisionTreeTest {
    
   def main(args : Array[String]) {
     
-    val target = "PLAY GOLF"
+    //val target = "PLAY GOLF"
+    //val filename = "./weather.csv"
     
-    getRandomAccuracy("./titanicdata.csv")
+    val target = "SURVIVED"
+    val filename = "./titanicdata.csv"
+    
+    getRandomAccuracy(filename)
     
     val t = new UADecisionTree()
     t.setTreeMaxDepth(10)
     t.setMinimumImpurity(0.05.toFloat)
     
-    val data = t.getTrainingMatrix("./weathertest.csv", target)
+    val data = t.getTrainingMatrix("./train.csv", target)
    
     val s = new Node(data._1(0).length-1)
     s.setValues(target, data._2.toFloat)
-
+    
     t.train(s,data._1,0)
 
-    // Attempt to classify value.
+    val src = Source.fromFile("./test.csv")
+    val itr = src.getLines()
+    val attr = itr.next()
     
-    val map = HashSet.empty[String]
-    val itr = data._1.iterator
-    val tmp = itr.next()
-    var spl = Array[String]()
-    
-    for(ind <- 0 to tmp.length-1) {
-      spl = tmp(ind).split(",")
-      map += tmp(ind)
-      map += spl(0)
-      print(tmp(ind)+" ")
+    for(data <- itr) {
+      println(data)
+      t.classifyValue(s,data)    
     }
-    println()
-
-    t.traverse(s,map,0)
-    
     
   }
   

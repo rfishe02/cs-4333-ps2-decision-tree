@@ -66,7 +66,7 @@ class UADecisionTree {
 
     // Calculate base entropy for the target variable.
     
-    for( item <- tgt) {
+    for( item <- tgt ) {
       e += (item._2.toDouble/matrix.size) * (scala.math.log10(item._2.toDouble/matrix.size) / scala.math.log10(2))
     }
     
@@ -98,28 +98,29 @@ class UADecisionTree {
     if(d < depth) {
       
       // Find the attribute with the largest IG and return a node with children.
-      
       val result = maxNode(parent,data)
       
       // Decide to recursively split, or stop.
-
       if(result != null) {
 
         parent.addLink(result)
-        result.parent = parent
         
         // Create a subset of data that doesn't include the max attribute.
         val set = getSubSet(data,result.col)
         
         for( n <- result.children) {
+          
           if(n.ent > impur) {
-            train(n,set(n.getAttr()),d+1) // Split using the subattribute's subset.
+            // Split using the subattribute's subset.
+            
+            train(n,set(n.getAttr()),d+1)
           } else {
             
             // The child becomes a leaf when the impurity is sufficient.
             n.res = getOutcome(set(n.getAttr()))
 
           }
+          
         }
       } else {
         
@@ -127,6 +128,11 @@ class UADecisionTree {
         parent.res = getOutcome(data)
         
       }
+    } else {
+      
+      // Set the outcome for any nodes that reach the depth.
+      parent.res = getOutcome(data)
+      
     }
   }
   
@@ -134,9 +140,19 @@ class UADecisionTree {
   // This method is used to test the application.
   //=============================================================
   
-  def classifyValue(record : String) {
+  def classifyValue(s : Node, record : String) {
     
+    val map = HashSet.empty[String]
+    val tmp = record.split(",")
+    var spl = Array[String]()
     
+    for(ind <- 0 to tmp.length-1) {
+      map += tmp(ind)
+      spl = tmp(ind).split(",")
+      map += spl(0)
+    }
+    
+    traverse(s,map)
     
   }
   
@@ -238,8 +254,6 @@ class UADecisionTree {
       // Add the array to the ListBuffer.
       subSet(item(col)) += tmp
     }
-
-    //printData(subSet)
     
     (subSet)
     
@@ -264,7 +278,7 @@ class UADecisionTree {
  
     // Calculate the frequencies for the data in the set.
     val freq = calcFreq(data)
-    
+
     for( key <- freq._1.keySet) {
       
       p = new Node(key)
@@ -286,7 +300,7 @@ class UADecisionTree {
         c = new Node(key)
         c.setValues(a._1, (ent).toFloat)
         p.addLink(c)
-        
+
         entSum += ent  * prob 
       }
       cIG = parent.ent-entSum
@@ -344,7 +358,7 @@ class UADecisionTree {
       }
       sum += 1
     }
-
+    
     (attr,cond,sum)
     
   }
@@ -388,36 +402,44 @@ class UADecisionTree {
   // Recursively travel the tree to classify a record.
   //=============================================================
   
-  def traverse(parent : Node, map : HashSet[String], ind : Integer) {
+  def traverse(parent : Node, map : HashSet[String]) {
 
-    var gate : Boolean = false
-    
+    // Continue as long as the node doesn't have a survival condition.
     if(parent.res == null) {
-      // Continue as long as the node doesn't have a survival condition.
       
-      var child : Node = null
+      // Choose the child that has the same conditions as the record.
       
-      def findChild() {
+      //println(parent.getAttr()+"  "+parent.res)
+      
+      if(parent.children.size == 1) {
+        traverse(parent.children(0),map) // This is an attribute node.
+      } else {
         
-        for(c <- parent.children) {
-        // Choose a child that has the same conditions as the record.
+        var child : Node = null
+      
+        def findChild() {
         
-          if(map.contains(c.getAttr())) {
-            gate = true
-            child = c
-            return
+          for(c <- parent.children) {
+            if(map.contains(c.subAttr)) {
+              child = c
+              return
+            }
           }
 
         }
-
-      }
       
-      if(gate) {
-        traverse(child,map,ind+1)
+        findChild()
+      
+        if(child != null) {
+          traverse(child,map)
+        } else {
+          println("No outcome found.")
+        }
+        
       }
       
     } else {
-      println(parent.attr+" "+parent.res)
+      println(parent.getAttr()+"  "+parent.res)
 
     }
     
