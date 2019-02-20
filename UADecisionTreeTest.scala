@@ -11,8 +11,8 @@ object UADecisionTreeTest {
    
   def main(args : Array[String]) {
 
-    val target = "PLAY GOLF"
-    val filename = "./weather.csv"
+    val target = "SURVIVED"
+    val filename = "./titanicdata.csv"
     
     getBestDepth(filename,target)
     
@@ -31,16 +31,19 @@ object UADecisionTreeTest {
   // a rough 80/20 split.
   //=============================================================
   
-  def getRandomAccuracy(filename : String) {
+  def getRandomAccuracy(filename : String, target:String) {
     
     val src = Source.fromFile(filename)
     val itr = src.getLines()
-    val labels = itr.next()
+    var spl = Array[String]()
+    var tmp : String = null
     
     val testWrite = new PrintWriter(new File("./test.csv"))
     val trainWrite = new PrintWriter(new File("./train.csv"))
     
-    testWrite.println(labels)
+    val labels = itr.next()
+    var attr = labels.split(",")
+    
     trainWrite.println(labels)
     
     val rand = new scala.util.Random
@@ -57,7 +60,21 @@ object UADecisionTreeTest {
       }
       
       if(step == roll) {
-        testWrite.println(line)
+        
+        // Move the target variable to the end of the test data.
+        spl = line.split(",")
+        
+        for(i <- 0 to spl.length-1) {
+          if(attr(i).equalsIgnoreCase(target)) {
+            tmp = spl(i)
+          } else {
+            testWrite.print(spl(i)+",")
+          }
+        }
+
+        testWrite.print(tmp)
+        testWrite.println()
+        
       } else {
         trainWrite.println(line)
       }
@@ -107,9 +124,9 @@ object UADecisionTreeTest {
         for(depth <- 0 to 9) {
           correct(depth) = 0
           
-          for(a <- 0 to 2) {
+          for(a <- 0 to 100) {
         
-            getRandomAccuracy(filename)
+            getRandomAccuracy(filename,target)
         
             tree = new UADecisionTree()
             tree.setTreeMaxDepth(depth)
@@ -124,7 +141,6 @@ object UADecisionTreeTest {
           
             val src = Source.fromFile("./test.csv")
             val itr = src.getLines()
-            itr.next()
     
             for(data <- itr) {
               if(tree.classifyValue(data)){
@@ -132,10 +148,13 @@ object UADecisionTreeTest {
               }
               total(depth)+=1
             }
-          }  
+            
+          } 
+          
         }
       
         // Print results.
+        
         var result : Double = 0
         for(ind <- 0 to correct.length-1) {
           result = correct(ind).toDouble / total(ind)
@@ -181,7 +200,6 @@ object UADecisionTreeTest {
       }
       
       res = false
-
     }
       
     findAttr()
