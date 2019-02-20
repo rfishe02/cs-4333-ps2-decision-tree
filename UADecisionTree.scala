@@ -8,6 +8,7 @@ class UADecisionTree {
 
   var depth : Integer = _;
   var impur : Float = _;
+  var start : Node = _; 
   
   //=============================================================
   // The necessary methods.
@@ -117,7 +118,7 @@ class UADecisionTree {
           } else {
             
             // The child becomes a leaf when the impurity is sufficient.
-            n.res = getOutcome(set(n.getAttr()))
+            n.res = findOutcome(set(n.getAttr()))
 
           }
           
@@ -125,13 +126,13 @@ class UADecisionTree {
       } else {
         
         // The parent becomes a leaf when the information gain isn't sufficient.
-        parent.res = getOutcome(data)
+        parent.res = findOutcome(data)
         
       }
     } else {
       
       // Set the outcome for any nodes that reach the depth.
-      parent.res = getOutcome(data)
+      parent.res = findOutcome(data)
       
     }
   }
@@ -140,7 +141,7 @@ class UADecisionTree {
   // This method is used to test the application.
   //=============================================================
   
-  def classifyValue(s : Node, record : String) {
+  def classifyValue(record : String) : Boolean = {
     
     val map = HashSet.empty[String]
     val tmp = record.split(",")
@@ -152,7 +153,15 @@ class UADecisionTree {
       map += spl(0)
     }
     
-    traverse(s,map)
+    val res = recordOutcome(start,map)
+
+    if(res == null) {
+      return false
+    } else if(spl(spl.length-1).equalsIgnoreCase(res)) {
+      return true
+    } else {
+      return false
+    }
     
   }
   
@@ -364,10 +373,10 @@ class UADecisionTree {
   }
   
   //=============================================================
-  // Find the outcome of a Node.
+  // Find the outcome for a leaf node.
   //=============================================================
 
-  def getOutcome(data : ListBuffer[Array[String]]) : String = {
+  def findOutcome(data : ListBuffer[Array[String]]) : String = {
     
     val freq = HashMap.empty[String,Integer]
     var label : String = null
@@ -394,25 +403,22 @@ class UADecisionTree {
       }
     }
     
-    return label
+    return label.split(",")(1)
     
   }
   
   //=============================================================
-  // Recursively travel the tree to classify a record.
+  // Recursively travel the tree to find the outcome for a record.
   //=============================================================
   
-  def traverse(parent : Node, map : HashSet[String]) {
+  def recordOutcome(parent : Node, map : HashSet[String]) : String = {
 
     // Continue as long as the node doesn't have a survival condition.
     if(parent.res == null) {
       
       // Choose the child that has the same conditions as the record.
-      
-      //println(parent.getAttr()+"  "+parent.res)
-      
       if(parent.children.size == 1) {
-        traverse(parent.children(0),map) // This is an attribute node.
+        recordOutcome(parent.children(0),map) // This is an attribute node.
       } else {
         
         var child : Node = null
@@ -431,16 +437,16 @@ class UADecisionTree {
         findChild()
       
         if(child != null) {
-          traverse(child,map)
+          recordOutcome(child,map)
         } else {
-          println("No outcome found.")
+          // The outcome wasn't found. This would occur if the training set doesn't match the test set.
+          return null 
         }
         
       }
       
     } else {
-      println(parent.getAttr()+"  "+parent.res)
-
+      return parent.res
     }
     
   }
