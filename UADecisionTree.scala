@@ -9,6 +9,7 @@ class UADecisionTree {
   var depth : Integer = _;
   var impur : Float = _;
   var start : Node = _; 
+  var attr : Array[String] = _;
   
   //=============================================================
   // The necessary methods.
@@ -34,6 +35,7 @@ class UADecisionTree {
     
     val data = stats._1.iterator
     val attData = data.next()
+    attr = attData // Store these for the classifier.
     
     for( item <- data ) {
       c = 0
@@ -95,7 +97,7 @@ class UADecisionTree {
   //=============================================================
   
   def train(parent : Node, data : ListBuffer[Array[String]], d : Integer) {
-    
+
     if(d < depth) {
       
       // Find the attribute with the largest IG and return a node with children.
@@ -103,7 +105,7 @@ class UADecisionTree {
       
       // Decide to recursively split, or stop.
       if(result != null) {
-
+        
         parent.addLink(result)
         
         // Create a subset of data that doesn't include the max attribute.
@@ -147,17 +149,18 @@ class UADecisionTree {
     val tmp = record.split(",")
     var spl = Array[String]()
     
+    // Format the record for classification & add its attributes to a HashSet.
     for(ind <- 0 until tmp.length) {
-      map += tmp(ind)
-      spl = tmp(ind).split(",")
-      map += spl(0)
+      map += attr(ind)
+      map += attr(ind)+","+tmp(ind)
     }
     
+    // Try to find the record in the decision tree.
     val res = recordOutcome(start,map)
 
     if(res == null) {
       return false
-    } else if(spl(spl.length-1).equalsIgnoreCase(res)) {
+    } else if(tmp(tmp.length-1).equalsIgnoreCase(res.split(",")(1))) {
       return true
     } else {
       return false
@@ -403,7 +406,7 @@ class UADecisionTree {
       }
     }
     
-    return label.split(",")(1)
+    return label
     
   }
   
@@ -417,32 +420,24 @@ class UADecisionTree {
     if(parent.res == null) {
       
       // Choose the child that has the same conditions as the record.
-      if(parent.children.size == 1) {
-        recordOutcome(parent.children(0),map) // This is an attribute node.
-      } else {
-        
-        var child : Node = null
+      var child : Node = null
       
-        def findChild() {
-        
-          for(c <- parent.children) {
-            if(map.contains(c.subAttr)) {
+      def findChild() {
+        for(c <- parent.children) {
+          if(map.contains(c.getAttr())) {
               child = c
               return
-            }
           }
-
         }
+      }
       
-        findChild()
+      findChild()
       
-        if(child != null) {
-          recordOutcome(child,map)
-        } else {
-          // The outcome wasn't found. This would occur if the training set doesn't match the test set.
-          return null 
-        }
-        
+      if(child != null) {
+        recordOutcome(child,map)
+      } else {
+        // The outcome wasn't found. This would occur if the test set doesn't match the training set.
+        return null 
       }
       
     } else {

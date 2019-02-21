@@ -13,8 +13,11 @@ object UADecisionTreeTest {
 
     val target = "SURVIVED"
     val filename = "./titanicdata.csv"
+    val depth = 10
+    val impur = 0.05F
+    val trials = 100
     
-    getBestDepth(filename,target)
+    getBestDepth(filename,target, depth, impur, trials)
     
   }
   
@@ -94,7 +97,7 @@ object UADecisionTreeTest {
     
   }
   
-  def getBestDepth(filename : String, target: String) {
+  def getBestDepth(filename : String, target: String, d : Integer, impurity : Float, trials : Integer) {
     
     // Accuracy = # of correct positions / total positions
     
@@ -105,26 +108,23 @@ object UADecisionTreeTest {
     // or the max depth.
     
     // Perform this test 100 times & print the average test results.
-    
-    var impurity : Float = 0.05F
+
     var tree : UADecisionTree = null
     var testData = (ListBuffer[Array[String]](),0.0)
     var start : Node = null
-    val correct = new Array[Integer](11)
-    val total = new Array[Integer](11)
+    val correct = new Array[Integer](d+1)
+    val total = new Array[Integer](d+1)
     
     try {
-
       val verified = verifyTarget(filename, target)
       
       if(verified) {
-        
         // Conduct tests.
     
-        for(depth <- 0 to 10) {
+        for(depth <- 0 to d) {
           correct(depth) = 0
           
-          for(a <- 1 to 100) {
+          for(a <- 1 to trials) {
         
             getRandomAccuracy(filename,target)
         
@@ -137,7 +137,7 @@ object UADecisionTreeTest {
             tree.start = new Node(testData._1(0).length-1)
             tree.start.setValues(target,testData._2.toFloat)
           
-            tree.train(tree.start,testData._1,depth)
+            tree.train(tree.start,testData._1,0)
           
             val src = Source.fromFile("./test.csv")
             val itr = src.getLines()
@@ -148,9 +148,7 @@ object UADecisionTreeTest {
               }
               total(depth)+=1
             }
-            
           } 
-          
         }
       
         // Print results.
@@ -174,9 +172,7 @@ object UADecisionTreeTest {
       case ex: IOException => {
         ex.printStackTrace()
       }
-      
     }
-    
   }
   
   //=============================================================
@@ -184,7 +180,6 @@ object UADecisionTreeTest {
   //=============================================================
   
   def verifyTarget(filename: String, target : String) : Boolean = {
-    
     var res = true
     
     val src = Source.fromFile(filename)
