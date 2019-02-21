@@ -99,13 +99,9 @@ object UADecisionTreeTest {
   
   def getBestDepth(filename : String, target: String, d : Integer, impurity : Float, trials : Integer) {
     
-    // Accuracy = # of correct positions / total positions
-    
-    // Determine the best depth for the data set using the test
-    // & training data.
-    
-    // Start with 0, & increase by 1 until you reach ten,
-    // or the max depth.
+    // Accuracy = # of correct outcomes / total outcomes
+
+    // Start with 0, & increase by 1 until the depth has been reached.
     
     // Perform this test 100 times & print the average test results.
 
@@ -126,20 +122,20 @@ object UADecisionTreeTest {
           
           for(a <- 1 to trials) {
         
-            getRandomAccuracy(filename,target)
+            getRandomAccuracy(filename,target) // Create the training data & test data.
         
             tree = new UADecisionTree()
             tree.setTreeMaxDepth(depth)
             tree.setMinimumImpurity(impurity)
     
-            testData = tree.getTrainingMatrix("./train.csv", target)
+            testData = tree.getTrainingMatrix("./train.csv", target) // Build a decision tree.
 
             tree.start = new Node(testData._1(0).length-1)
             tree.start.setValues(target,testData._2.toFloat)
           
-            tree.train(tree.start,testData._1,0)
+            tree.train(tree.start,testData._1,0) // Train the model.
           
-            val src = Source.fromFile("./test.csv")
+            val src = Source.fromFile("./test.csv") // Load the test data & determine the accuracy.
             val itr = src.getLines()
     
             for(data <- itr) {
@@ -150,13 +146,11 @@ object UADecisionTreeTest {
             }
           } 
         }
-      
-        // Print results.
-        
+
         var result : Double = 0
         for(ind <- 0 until correct.length) {
           result = correct(ind).toDouble / total(ind)
-          System.out.println(ind+" "+result)
+          System.out.println(ind+" "+result)  // Print results.
         }
         
       } else {
