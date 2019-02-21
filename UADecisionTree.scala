@@ -123,7 +123,6 @@ class UADecisionTree {
             n.res = findOutcome(set(n.getAttr()))
 
           }
-          
         }
       } else {
         
@@ -272,7 +271,7 @@ class UADecisionTree {
   }
 
   //=============================================================
-  // Calculate information gain & generate a series of nodes.
+  // Calculate information gain for the parent & generate a series of child nodes.
   //=============================================================
   
   def maxNode(parent: Node, data : ListBuffer[Array[String]]) = {
@@ -291,9 +290,10 @@ class UADecisionTree {
     // Calculate the frequencies for the data in the set.
     val freq = calcFreq(data)
 
+    // Use the frequencies to find the information gain.
     for( key <- freq._1.keySet) {
       
-      p = new Node(key)
+      p = new Node(key) // Create a new parent.
       
       entSum = 0
       for( a <- freq._1(key)) {
@@ -308,8 +308,7 @@ class UADecisionTree {
 
         ent = ent * -1
         
-        // set child values
-        c = new Node(key)
+        c = new Node(key) // Create a new child & attach it to the parent.
         c.setValues(a._1, (ent).toFloat)
         p.addLink(c)
 
@@ -321,8 +320,7 @@ class UADecisionTree {
         max = p
       }
       
-      // set parent values
-      p.attr = c.attr
+      p.attr = c.attr // Set the attribute of the parent.
     }
       
     (max)
@@ -397,7 +395,7 @@ class UADecisionTree {
       
     }
     
-    // Find the most frequent attribute & associated outcome.
+    // Find the most frequent attribute & its associated outcome.
     
     for( values <- freq) {
       if(values._2 > max) {
@@ -441,6 +439,7 @@ class UADecisionTree {
       }
       
     } else {
+      // The classification outcome was found, when the node has a non-null result.
       return parent.res
     }
     
