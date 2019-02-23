@@ -1,4 +1,11 @@
 
+/********************************
+Name: Renae Fisher
+Username: 
+Problem Set: PS2
+Due Date: 02, 21, 2019
+********************************/
+
 import scala.io.Source
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
@@ -7,79 +14,12 @@ import scala.collection.mutable.ListBuffer
 class UADecisionTree {
 
   var depth : Integer = _;
-  var impur : Float = _;
+  var minImpur : Float = _;
   var start : Node = _; 
   var attr : Array[String] = _;
-  
-  //=============================================================
-  // The necessary methods.
-  //=============================================================
-  
-  //=============================================================
-  // This method builds a training matrix from the training data.
-  //=============================================================
-  
-  def getTrainingMatrix(filename : String, target: String) = {
-    
-    val tgt = HashMap.empty[String,Integer]
-    var e : Double = 0
-    var c : Integer = 0
-    var tmp = Array[String]()
 
-    // Determine which subattributes are valid.
-    
-    val stats = getStats(filename, target) // ( data, s, c )
-    val matrix = ListBuffer.empty[Array[String]]
-
-    // Rearrange the data such that the target variable is at the end.
-    
-    val data = stats._1.iterator
-    val attData = data.next()
-    attr = attData // Store these for the classifier.
-    
-    for( item <- data ) {
-      c = 0
-      
-      tmp = new Array[String](stats._3)
-      
-      for(col <- 0 until item.length) {
-        
-        if(stats._2(col) <= 20) {
-          
-          if(attData(col).equalsIgnoreCase(target)) { 
-            tmp(tmp.length-1) = attData(col)+","+item(col)
-            
-            // Calculate the frequencies for the target variable.
-            if(tgt.contains(item(col))) {
-              tgt(item(col)) += 1
-            } else {
-              tgt += (item(col) -> 1)
-            }
-            
-          } else {
-            tmp(c) = attData(col)+","+item(col)
-            c += 1
-          }
-          
-        }
-      }
-      matrix += tmp
-      
-    }
-
-    // Calculate base entropy for the target variable.
-    
-    for( item <- tgt ) {
-      e += (item._2.toDouble/matrix.size) * (scala.math.log10(item._2.toDouble/matrix.size) / scala.math.log10(2))
-    }
-    
-    e = e * -1
-    
-    (matrix,e)
-  }
-  
   //=============================================================
-  // These are the setters for detph & impurity.
+  // The methods used to set the depth & minimum impurity.
   //=============================================================
   
   def setTreeMaxDepth(max : Integer) {
@@ -88,12 +28,134 @@ class UADecisionTree {
   }
   
   def setMinimumImpurity(min : Float) {
-    impur = min
+    minImpur = min
     
   }
   
   //=============================================================
-  // This is the train method.
+  // This method creates a training matrix from a file.
+  //=============================================================
+  
+  def getTrainingMatrix(filename : String, target: String) = {
+    
+    val tgtFreq = HashMap.empty[String,Integer]
+    var tmp = Array[String]()
+    var e : Double = 0
+    var i : Integer = 0
+
+    // Determine the number of valid sub-attributes.
+    
+    val stats = getStats(filename, target) // ( data, s, c )
+    val matrix = ListBuffer.empty[Array[String]]
+
+    // Build the training matrix, and place the target variable at the end.
+    
+    val rawData = stats._1.iterator
+    val attData = rawData.next()
+    
+    attr = attData // Store attribute information for the classifier.
+    
+    for( line <- rawData ) {
+      i = 0
+      tmp = new Array[String](stats._3)
+      
+      for(ind <- 0 until line.length) {
+        
+        if(stats._2(ind) <= 20) {
+          
+          if(attData(ind).equalsIgnoreCase(target)) { 
+            tmp(tmp.length-1) = attData(ind)+","+line(ind) // Concat the attribute name to the sub-attribute.
+            
+            if(tgtFreq.contains(line(ind))) {
+              tgtFreq(line(ind)) += 1 // Calculate the frequencies for the target variable.
+            } else {
+              tgtFreq += (line(ind) -> 1)
+            }
+            
+          } else {
+            tmp(i) = attData(ind)+","+line(ind)
+            i += 1
+          }
+        }
+      }
+      matrix += tmp
+    }
+
+    // Calculate the base entropy for the target variable.
+    
+    for( subFreq <- tgtFreq ) {
+      e += (subFreq._2.toDouble/matrix.size) * (scala.math.log10(subFreq._2.toDouble/matrix.size) / scala.math.log10(2))
+    }
+    
+    e = e * -1
+    
+    (matrix,e)
+  }
+  
+  //=============================================================
+  // Get the statistics for the file.
+  //=============================================================
+  
+  def getStats(filename : String, target : String) = {
+    
+    val rawData = ListBuffer.empty[Array[String]]
+    val mapSet = HashMap.empty[String,HashSet[String]]
+
+    val src = Source.fromFile(filename)
+    val itr = src.getLines()
+    
+    val attrList = itr.next().split(",")
+    var attrFreq = new Array[Integer](attrList.length)
+    
+    var spl = Array[String]()
+    var c : Integer = 0
+
+    // Create a new HashSet for each attribute, except for the target attribute.
+
+    for(word <- attrList) {
+      if(!word.equalsIgnoreCase(target)) {
+        mapSet+= (word -> new HashSet[String])
+      }
+    }
+    
+    rawData += attrList // Store the attribute list for the getTrainingMatrix method.
+
+    // Use the HashSet to get the frequency of each sub-attribute within an attribute.
+
+    for(line <- itr) {
+      spl = line.split(",")
+      rawData += spl
+      
+      for( ind <- 0 until spl.length) {
+        if(mapSet.contains(attrList(ind))) {
+          
+          if(!mapSet(attrList(ind)).contains(spl(ind))) {
+            mapSet(attrList(ind)) += (spl(ind))
+            attrFreq(ind) = attrFreq(ind) + 1
+          }
+          
+        }
+      }
+    }
+    
+    // Count the number of valid subattributes.
+    
+    for(set <- mapSet.valuesIterator) {
+      if(set.size <= 20) {
+        c += 1
+      }
+    }
+    
+    c += 1 // Count the target variable, which wasn't counted.
+
+    src.close()
+    
+    (rawData,attrFreq,c)
+    
+  }
+
+  //=============================================================
+  // This method recursively creates a decision tree from the training matrix.
   //=============================================================
   
   def train(parent : Node, data : ListBuffer[Array[String]], d : Integer) {
@@ -113,13 +175,13 @@ class UADecisionTree {
         
         for( n <- result.children) {
           
-          if(n.ent > impur) {
+          if(n.ent > minImpur) {
             // Split using the subattribute's subset.
             
             train(n,set(n.getAttr()),d+1)
           } else {
             
-            // The child becomes a leaf when the impurity is sufficient.
+            // The child becomes a leaf when the min impurity is sufficient.
             n.res = findOutcome(set(n.getAttr()))
 
           }
@@ -136,6 +198,186 @@ class UADecisionTree {
       parent.res = findOutcome(data)
       
     }
+  }
+  
+  //=============================================================
+  // Calculate the IG for the parent & generate child nodes.
+  //=============================================================
+  
+  def maxNode(parent: Node, data : ListBuffer[Array[String]]) = {
+
+    var maxSubAttr : Node = null;
+    var parent : Node = null;
+    var child : Node = null;
+    
+    var prob : Double = 0
+    var condProb : Double = 0
+    var ent : Double = 0
+    var entSum : Double = 0
+    var maxIG : Double = -1
+    var currIG : Double = 0
+ 
+    // Calculate the frequencies for the supplied data.
+    val freq = calcFreq(data) // (attr,cond,sum)
+
+    // Use the frequencies to find the information gain.
+    for( key <- freq._1.keySet) {
+      
+      parent = new Node(key) // Create a new parent node.
+      
+      entSum = 0
+      for( subAttrFreq <- freq._1(key)) {
+        
+        prob = subAttrFreq._2.toDouble / freq._3
+        ent = 0
+
+        for( condAttrFreq <- freq._2(subAttrFreq._1)) {
+          condProb = condAttrFreq._2.toDouble / subAttrFreq._2
+          ent += condProb * (scala.math.log10(condProb)/scala.math.log10(2))
+        }
+
+        ent = ent * -1
+        
+        child = new Node(key) // Create a new child & attach it to the parent.
+        child.setValues(subAttrFreq._1, (ent).toFloat)
+        parent.addLink(child)
+
+        entSum += ent  * prob 
+      }
+      
+      currIG = parent.ent-entSum
+      if(currIG > maxIG) {
+        maxIG = currIG
+        maxSubAttr = parent
+      }
+      
+      parent.attr = child.attr // Set the attribute of the parent.
+    }
+      
+    (maxSubAttr)
+    
+  }
+  
+  //=============================================================
+  // Calculate frequencies.
+  //=============================================================
+  
+  def calcFreq(data : ListBuffer[Array[String]]) = {
+    val attrFreq = HashMap.empty[Int,HashMap[String,Integer]] // Attribute
+    val condFreq = HashMap.empty[String,HashMap[String,Integer]] // Conditional
+    var tmp : String = ""
+    var sum : Integer = 0 // Total lines
+    
+    for(line <- data) {
+      for(ind <- 0 to line.size - 2) {
+          
+        // Add maps for attribute & conditional frequencies.
+        
+        if(!attrFreq.contains(ind)) {
+          attrFreq += (ind -> HashMap.empty[String,Integer]) // Column --> ( Sub-Attribute --> Freq )
+        }
+        if(!condFreq.contains(line(ind))) {
+          condFreq += (line(ind) -> HashMap.empty[String,Integer]) // Sub-Attribute --> ( Cond-Attribute --> Freq )
+        }
+        
+        // Count attribute & conditional frequencies.
+
+        if(attrFreq(ind).contains(line(ind))){
+          attrFreq(ind)(line(ind)) += 1
+        } else {
+          attrFreq(ind) += (line(ind) -> 1)
+        }
+        
+        tmp = line(ind)+""+line(line.size-1) // Concat the sub-attribute & the target sub-attribute.
+        
+        if(condFreq(line(ind)).contains( tmp ) ) {
+          condFreq(line(ind))( tmp ) += 1
+        } else {
+          condFreq(line(ind)) += (tmp -> 1)
+        } 
+
+      }
+      sum += 1
+    }
+    
+    (attrFreq,condFreq,sum)
+    
+  }
+  
+  //=============================================================
+  // Get the subsets of a column.
+  //=============================================================
+  
+  def getSubSet(data : ListBuffer[Array[String]], col : Integer) = {
+    
+    val subAttrMap = HashMap.empty[String,ListBuffer[Array[String]]]
+    var tmp = Array[String]()
+    var i : Integer = 0
+    
+    // Build subsets of the data for each subattribute. 
+    // This set won't include the column col.
+    
+    for(line <- data) {
+
+      // Create a ListBuffer for the sub-attribute of column.
+      
+      if(!subAttrMap.contains(line(col))) {
+        subAttrMap += (line(col) -> new ListBuffer[Array[String]]())
+      }
+      
+      // Add items to an array, except the values within col.
+
+      tmp = new Array[String](line.length-1)
+      
+      i = 0
+      for(ind <- 0 until line.length) {
+        if(ind != col) {
+          tmp(i) = line(ind)
+          i += 1
+        }
+      }
+      
+      // Add the array to the ListBuffer.
+      subAttrMap(line(col)) += tmp
+    }
+    
+    (subAttrMap)
+    
+  }
+  
+  //=============================================================
+  // Find the outcome for a leaf node.
+  //=============================================================
+
+  def findOutcome(data : ListBuffer[Array[String]]) : String = {
+    
+    val freq = HashMap.empty[String,Integer]
+    var label : String = null
+    var max : Integer = 0
+    
+    // Get the frequencies of the subattributes in the set.
+    
+    for(line <- data) {
+      
+      if(freq.contains(line(line.length-1))) {
+        freq(line(line.length-1)) += 1
+      } else {
+        freq += (line(line.length-1) -> 1)
+      }
+      
+    }
+    
+    // Find the most frequent attribute & its associated outcome.
+    
+    for( values <- freq) {
+      if(values._2 > max) {
+        max = values._2
+        label = values._1
+      }
+    }
+    
+    return label
+    
   }
   
   //=============================================================
@@ -164,247 +406,6 @@ class UADecisionTree {
     } else {
       return false
     }
-    
-  }
-  
-  //=============================================================
-  // Methods I've developed.
-  //=============================================================
-  
-  //=============================================================
-  // Get the statistics for the file.
-  //=============================================================
-  
-  def getStats(filename : String, target : String) = {
-    
-    val data = ListBuffer.empty[Array[String]]
-    val set = HashMap.empty[String,HashSet[String]]
-
-    val src = Source.fromFile(filename)
-    val itr = src.getLines()
-    val attr = itr.next().split(",")
-    
-    var spl = Array[String]()
-    var s = new Array[Integer](attr.length)
-    var c : Integer = 0
-
-    // Create a new HashSet for each attribute, except the target.
-
-    for(word <- attr) {
-      if(!word.equalsIgnoreCase(target)) {
-        set+= (word -> new HashSet[String])
-      }
-    }
-    
-    data += attr // This is used as a reference when building the training matrix.
-
-    // Get the count of sub-attributes using the HashSet.
-
-    for(line <- itr) {
-      spl = line.split(",")
-      data += spl
-      
-      for( col <- 0 until spl.length) {
-        if(set.contains(attr(col))) {
-          if(!set(attr(col)).contains(spl(col))) {
-            set(attr(col)) += (spl(col))
-            s(col) = s(col) + 1
-          }
-        }
-      }
-    }
-    
-    // Count the number of valid subattributes.
-    
-    for(item <- set.valuesIterator) {
-      if(item.size <= 20) {
-        c += 1
-      }
-    }
-    
-    c += 1 // This is the target variable.
-
-    src.close()
-    
-    (data,s,c)
-    
-  }
-  
-  //=============================================================
-  // Get the subsets of a column.
-  //=============================================================
-  
-  def getSubSet(data : ListBuffer[Array[String]], col : Integer) = {
-    
-    val subSet = HashMap.empty[String,ListBuffer[Array[String]]]
-    var tmp = Array[String]()
-    var i : Integer = 0
-    
-    // Build subsets of the data within a column. This set doesn't include the column.
-    
-    for(item <- data) {
-
-      // Create a ListBuffer for each sub-attribute of a column.
-      
-      if(!subSet.contains(item(col))) {
-        subSet += (item(col) -> new ListBuffer[Array[String]]())
-      }
-      
-      // Add items to an array, except the values within col.
-
-      tmp = new Array[String](item.length-1)
-      
-      i = 0
-      for(c <- 0 until item.length) {
-        if(c != col) {
-          tmp(i) = item(c)
-          i += 1
-        }
-      }
-      
-      // Add the array to the ListBuffer.
-      subSet(item(col)) += tmp
-    }
-    
-    (subSet)
-    
-  }
-
-  //=============================================================
-  // Calculate information gain for the parent & generate a series of child nodes.
-  //=============================================================
-  
-  def maxNode(parent: Node, data : ListBuffer[Array[String]]) = {
-
-    var max : Node = null;
-    var p : Node = null;
-    var c : Node = null;
-    
-    var prob : Double = 0
-    var cProb : Double = 0
-    var ent : Double = 0
-    var entSum : Double = 0
-    var maxIG : Double = -1
-    var cIG : Double = 0
- 
-    // Calculate the frequencies for the data in the set.
-    val freq = calcFreq(data)
-
-    // Use the frequencies to find the information gain.
-    for( key <- freq._1.keySet) {
-      
-      p = new Node(key) // Create a new parent.
-      
-      entSum = 0
-      for( a <- freq._1(key)) {
-        
-        prob = a._2.toDouble / freq._3
-        ent = 0
-        
-        for( b <- freq._2(a._1)) {
-          cProb = b._2.toDouble / a._2
-          ent += cProb * (scala.math.log10(cProb)/scala.math.log10(2))
-        }
-
-        ent = ent * -1
-        
-        c = new Node(key) // Create a new child & attach it to the parent.
-        c.setValues(a._1, (ent).toFloat)
-        p.addLink(c)
-
-        entSum += ent  * prob 
-      }
-      cIG = parent.ent-entSum
-      if(cIG > maxIG) {
-        maxIG = cIG
-        max = p
-      }
-      
-      p.attr = c.attr // Set the attribute of the parent.
-    }
-      
-    (max)
-    
-  }
-  
-  //=============================================================
-  // Calculate frequencies.
-  //=============================================================
-  
-  def calcFreq(data : ListBuffer[Array[String]]) = {
-    val cond = HashMap.empty[String,HashMap[String,Integer]] // Conditional
-    val attr = HashMap.empty[Int,HashMap[String,Integer]] // Attribute
-    var tmp : String = ""
-    var sum : Integer = 0 // Total records
-    
-    for( item <- data) {
-      for(col <- 0 to item.size - 2) {
-          
-        // Add maps for conditional & attribute frequencies.
-        
-        if(!cond.contains(item(col))) {
-          cond += (item(col) -> HashMap.empty[String,Integer])
-        }
-        if(!attr.contains(col)) {
-          attr += (col -> HashMap.empty[String,Integer])
-        }
-        
-        // Calculate conditional & attribute frequencies.
-
-        tmp = item(col)+""+item(item.size-1)
-        
-        if(cond(item(col)).contains( tmp ) ) {
-          cond(item(col))( tmp ) += 1
-        } else {
-          cond(item(col)) += ( tmp -> 1)
-        } 
-
-        if(attr(col).contains(item(col))){
-          attr(col)(item(col)) += 1
-        } else {
-          attr(col) += (item(col) -> 1)
-        }
-        
-      }
-      sum += 1
-    }
-    
-    (attr,cond,sum)
-    
-  }
-  
-  //=============================================================
-  // Find the outcome for a leaf node.
-  //=============================================================
-
-  def findOutcome(data : ListBuffer[Array[String]]) : String = {
-    
-    val freq = HashMap.empty[String,Integer]
-    var label : String = null
-    var max : Integer = 0
-    
-    // Get the frequencies of the subattributes in the set.
-    
-    for(item <- data) {
-      
-      if(freq.contains(item(item.length-1))) {
-        freq(item(item.length-1)) += 1
-      } else {
-        freq += (item(item.length-1) -> 1)
-      }
-      
-    }
-    
-    // Find the most frequent attribute & its associated outcome.
-    
-    for( values <- freq) {
-      if(values._2 > max) {
-        max = values._2
-        label = values._1
-      }
-    }
-    
-    return label
     
   }
   
@@ -450,9 +451,7 @@ class UADecisionTree {
   //=============================================================
   
   def printData(data : ListBuffer[Array[String]]) {
-    
-    // Print the contents of the training matrix.
-    
+
     for( item <- data) {
       for( col <- 0 until item.length) {
         print(item(col)+" ")
@@ -465,9 +464,7 @@ class UADecisionTree {
   }
   
   def printData(data : HashMap[String,ListBuffer[Array[String]]]) {
-    
-    // Print the contents of the subset.
-    
+
     for( item <- data) {
       println(item._1)
       for( array <- item._2) {

@@ -1,4 +1,11 @@
 
+/********************************
+Name: Renae Fisher
+Username: 
+Problem Set: PS2
+Due Date: 02, 21, 2019
+********************************/
+
 import scala.collection.mutable.ListBuffer
 
 class Node(c : Int) {
